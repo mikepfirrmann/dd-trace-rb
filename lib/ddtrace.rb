@@ -10,6 +10,7 @@ require 'ddtrace/pipeline'
 require 'ddtrace/configuration'
 require 'ddtrace/patcher'
 require 'ddtrace/augmentation'
+require 'ddtrace/metrics'
 
 # \Datadog global namespace that includes all tracing functionality for Tracer and Span classes.
 module Datadog
@@ -18,6 +19,7 @@ module Datadog
   @tracer = Tracer.new
   @registry = Registry.new
   @configuration = Configuration.new(registry: @registry)
+  @metrics = Metrics.new
 
   # Default tracer that can be used as soon as +ddtrace+ is required:
   #
@@ -33,7 +35,7 @@ module Datadog
   #   pin = Datadog::Pin.get_from(mypatchcomponent)
   #   pin.tracer = tracer
   class << self
-    attr_reader :tracer, :registry
+    attr_reader :tracer, :registry, :metrics
     attr_accessor :configuration
 
     def configure(target = configuration, opts = {})

@@ -49,6 +49,11 @@ module Datadog
       instance.class.debug_logging = options.fetch(:debug, false)
     end
 
+    def metrics(options = {})
+      instance = options.fetch(:instance, Datadog.metrics)
+      instance.configure(options)
+    end
+
     private
 
     def fetch_integration(name)
