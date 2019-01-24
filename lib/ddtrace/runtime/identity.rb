@@ -1,4 +1,5 @@
 require 'securerandom'
+require 'ddtrace/ext/runtime'
 
 module Datadog
   module Runtime
@@ -18,6 +19,22 @@ module Datadog
         end
 
         @id
+      end
+
+      def lang
+        Ext::Runtime::LANG
+      end
+
+      def lang_interpreter
+        Ext::Runtime::LANG_INTERPRETER
+      end
+
+      def lang_version
+        Ext::Runtime::LANG_VERSION
+      end
+
+      def tracer_version
+        Ext::Runtime::TRACER_VERSION
       end
     end
   end
