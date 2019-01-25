@@ -13,7 +13,7 @@ module Datadog
     attr_reader :statsd
 
     def initialize(statsd = nil)
-      @statsd = default_statsd_client if statsd.nil? && supported?
+      @statsd = statsd || (default_statsd_client if supported?)
     end
 
     def supported?
