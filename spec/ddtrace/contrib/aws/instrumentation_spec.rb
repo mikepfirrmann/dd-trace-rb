@@ -1,4 +1,5 @@
 require 'spec_helper'
+require 'ddtrace/contrib/analytics_examples'
 
 require 'aws-sdk'
 require 'ddtrace'
@@ -7,6 +8,7 @@ require 'ddtrace/ext/http'
 
 RSpec.describe 'AWS instrumentation' do
   let(:tracer) { get_test_tracer }
+  let(:configuration_options) { { tracer: tracer } }
 
   let(:client) { ::Aws::S3::Client.new(stub_responses: responses) }
   let(:responses) { true }
@@ -16,9 +18,11 @@ RSpec.describe 'AWS instrumentation' do
 
   before(:each) do
     Datadog.configure do |c|
-      c.use :aws, tracer: tracer
+      c.use :aws, configuration_options
     end
   end
+
+  after(:each) { Datadog.registry[:aws].reset_configuration! }
 
   context 'when the client runs' do
     describe '#list_buckets' do
@@ -26,6 +30,11 @@ RSpec.describe 'AWS instrumentation' do
 
       let(:responses) do
         { list_buckets: { buckets: [{ name: 'bucket1' }] } }
+      end
+
+      it_behaves_like 'analytics for integration' do
+        let(:analytics_enabled_var) { Datadog::Contrib::Aws::Ext::ENV_ANALYTICS_ENALBED }
+        let(:analytics_sample_rate_var) { Datadog::Contrib::Aws::Ext::ENV_ANALYTICS_SAMPLE_RATE }
       end
 
       it 'generates a span' do
