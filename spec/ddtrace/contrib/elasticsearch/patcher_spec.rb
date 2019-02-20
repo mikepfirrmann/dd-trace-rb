@@ -1,4 +1,6 @@
 require 'spec_helper'
+require 'ddtrace/contrib/analytics_examples'
+
 require 'ddtrace'
 require 'elasticsearch-transport'
 
@@ -8,17 +10,18 @@ RSpec.describe Datadog::Contrib::Elasticsearch::Patcher do
   let(:server) { "http://#{host}:#{port}" }
 
   let(:client) { Elasticsearch::Client.new(url: server) }
-  let(:pin) { Datadog::Pin.get_from(client) }
+  let(:configuration_options) { { tracer: tracer } }
   let(:tracer) { get_test_tracer }
 
   before do
     Datadog.configure do |c|
-      c.use :elasticsearch
+      c.use :elasticsearch, configuration_options
     end
 
     wait_http_server(server, 60)
-    pin.tracer = tracer
   end
+
+  after(:each) { Datadog.registry[:elasticsearch].reset_configuration! }
 
   describe 'cluster health request' do
     subject(:request) { client.perform_request 'GET', '_cluster/health' }
@@ -104,6 +107,11 @@ RSpec.describe Datadog::Contrib::Elasticsearch::Patcher do
     describe 'index request span' do
       before { request }
       subject(:span) { tracer.writer.spans.first }
+
+      it_behaves_like 'analytics for integration' do
+        let(:analytics_enabled_var) { Datadog::Contrib::Elasticsearch::Ext::ENV_ANALYTICS_ENALBED }
+        let(:analytics_sample_rate_var) { Datadog::Contrib::Elasticsearch::Ext::ENV_ANALYTICS_SAMPLE_RATE }
+      end
 
       it { expect(span.name).to eq('elasticsearch.query') }
       it { expect(span.service).to eq('elasticsearch') }
