@@ -1,21 +1,26 @@
 require 'spec_helper'
+require 'ddtrace/contrib/analytics_examples'
+
 require 'grpc'
 require 'ddtrace'
 
 RSpec.describe GRPC::InterceptionContext do
   subject(:interception_context) { described_class.new }
   let(:tracer) { get_test_tracer }
+  let(:configuration_options) { { tracer: tracer, service_name: 'rspec' } }
 
   describe '#intercept!' do
     let(:span) { tracer.writer.spans.first }
 
     before do
       Datadog.configure do |c|
-        c.use :grpc, tracer: tracer, service_name: 'rspec'
+        c.use :grpc, configuration_options
       end
 
       subject.intercept!(type, keywords) {}
     end
+
+    after(:each) { Datadog.registry[:grpc].reset_configuration! }
 
     context 'when intercepting on the client' do
       shared_examples 'span data contents' do
@@ -25,6 +30,11 @@ RSpec.describe GRPC::InterceptionContext do
         specify { expect(span.resource).to eq 'myservice.endpoint' }
         specify { expect(span.get_tag('error.stack')).to be_nil }
         specify { expect(span.get_tag(:some)).to eq 'datum' }
+
+        it_behaves_like 'analytics for integration' do
+          let(:analytics_enabled_var) { Datadog::Contrib::GRPC::Ext::ENV_ANALYTICS_ENALBED }
+          let(:analytics_sample_rate_var) { Datadog::Contrib::GRPC::Ext::ENV_ANALYTICS_SAMPLE_RATE }
+        end
       end
 
       context 'request response call type' do
@@ -90,6 +100,11 @@ RSpec.describe GRPC::InterceptionContext do
         specify { expect(span.resource).to eq 'my.server.endpoint' }
         specify { expect(span.get_tag('error.stack')).to be_nil }
         specify { expect(span.get_tag(:some)).to eq 'datum' }
+
+        it_behaves_like 'analytics for integration' do
+          let(:analytics_enabled_var) { Datadog::Contrib::GRPC::Ext::ENV_ANALYTICS_ENALBED }
+          let(:analytics_sample_rate_var) { Datadog::Contrib::GRPC::Ext::ENV_ANALYTICS_SAMPLE_RATE }
+        end
       end
 
       context 'request response call type' do
